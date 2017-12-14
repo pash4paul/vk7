@@ -29,7 +29,7 @@ setup(
     author_email=AUTHOR_EMAIL,
     classifiers=[
         'Development Status :: 3 - Alpha',
-        'Environment :: Console'
+        'Environment :: Console',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: MIT License',
@@ -41,5 +41,5 @@ setup(
     ],
     keywords='api data osint social vk.com',
     packages=find_packages(exclude=['tests']),
-    install_requires=['requests==2.18.4']
+    install_requires='requests==2.18.4'
 )

@@ -3,6 +3,21 @@
 
 import functools
 import logging
+import re
+from urllib.parse import urlparse, parse_qsl
+
+import requests
+
+
+class Lazy(object):
+    def __init__(self, factory_func):
+        self._factory_func = factory_func
+
+    @property
+    def value(self):
+        if not hasattr(self, '_value'):
+            self._value = self._factory_func()
+        return self._value
 
 
 def compose(*functions):
@@ -45,3 +60,77 @@ def get_logger(name):
     logger.addHandler(ch)
 
     return logger
+
+
+def get_auth_session(username, password):
+
+    auth_url = 'https://login.vk.com/?act=login'
+
+    re_ip_h = re.compile(r'name="ip_h" value="([a-z0-9]+)"')
+    re_lg_h = re.compile(r'name="lg_h" value="([a-z0-9]+)"')
+
+    session = requests.Session()
+
+    html = session.get(auth_url).text
+    ip_h = re.findall(re_ip_h, html)
+    lg_h = re.findall(re_lg_h, html)
+
+    data = {
+        'act': 'login',
+        'role': 'al_frame',
+        '_origin': 'https://vk.com',
+        'ip_h': ip_h,
+        'lg_h': lg_h,
+        'email': username,
+        'pass': password
+    }
+    session.post(auth_url, data)
+    return session
+
+
+def get_access_token(username, password, client_id, scope=None, version='5.69'):
+
+    scope = scope or [
+        'friends',
+        'photos',
+        'audio',
+        'video',
+        'pages',
+        'status',
+        'notes',
+        'messages',
+        'wall',
+        'offline',
+        'docs',
+        'groups',
+        'notifications',
+        'stats',
+        'email',
+        'market'
+    ]
+
+    session = get_auth_session(username, password)
+
+    auth_api_url = 'https://oauth.vk.com/authorize'
+    re_token_url = re.compile(r'https://login.vk.com/[?]act=grant_access.*?&https=1')
+
+    params = {
+        'client_id': client_id,
+        'display': 'page',
+        'redirect_uri': 'https://oauth.vk.com/blank.html',
+        'scope': scope,
+        'response_type': 'token',
+        'v': version
+    }
+
+    response = session.get(auth_api_url, params=params)
+
+    if 'access_token' not in response.url:
+        html = response.text
+        url = re.findall(re_token_url, html)[0]
+        response = session.get(url)
+
+    query = urlparse(response.url).fragment
+    access_token = dict(parse_qsl(query))['access_token']
+
+    return access_token

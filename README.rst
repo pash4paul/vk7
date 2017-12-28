@@ -21,7 +21,7 @@ Usage
 .. code:: python
 
     >>> from vk7 import VK
-    >>> from vk7.data import group_members_iterator
+    >>> from vk7.data_iterators import group_members_iterator
     >>>
     >>> vk = VK()
     >>> vk.users.get(user_ids='1,2')

@@ -14,10 +14,8 @@ class VK(object):
 
         if username and password and client_id:
             self._access_token = Lazy(lambda: get_access_token(username, password, client_id, scope, version))
-        elif access_token:
-            self._access_token = Lazy(lambda: access_token)
         else:
-            self._access_token = Lazy(lambda: None)
+            self._access_token = Lazy(lambda: access_token)
 
         self._version = version
 
@@ -28,7 +26,7 @@ class VK(object):
 
         self._call_stack.append(method_name)
 
-        if len(self._call_stack) == self._max_stack_size:
+        if len(self._call_stack) == self._max_stack_size or method_name == 'execute':
             method_name = '.'.join(self._call_stack)
             self._call_stack = []
             return partial(self._call_method, method_name)
@@ -48,6 +46,3 @@ class VK(object):
 
         data = requests.post(api_url, params).json()
         return data
-
-    def execute(self, **params):
-        return self._call_method('execute', **params)

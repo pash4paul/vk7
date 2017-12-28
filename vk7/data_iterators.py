@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # coding: utf8
 
+from typing import Dict, Iterator
+
+
 from vk7.utils import (
     execute_make_method,
     execute_make_code,
@@ -12,7 +15,7 @@ from vk7.utils import (
 logger = get_logger(__name__)
 
 
-def objects_iterator(vk, method, params, total, verbose=False):
+def _base_iterator(vk, method: str, params: Dict, total: int, verbose=False) -> Dict:
 
     for offsets in offsets_iterator(100, total, 25):
 
@@ -32,7 +35,7 @@ def objects_iterator(vk, method, params, total, verbose=False):
                 yield item
 
 
-def group_members_iterator(vk, group_id, fields='sex', verbose=False):
+def group_members_iterator(vk, group_id: int, fields='sex', verbose=False) -> Iterator:
 
     method = 'groups.getMembers'
 
@@ -45,10 +48,10 @@ def group_members_iterator(vk, group_id, fields='sex', verbose=False):
     data = vk.groups.getMembers(offset=0, count=0, **params)
     total_members = data['response']['count']
 
-    return objects_iterator(vk, method, params, total_members, verbose)
+    return _base_iterator(vk, method, params, total_members, verbose)
 
 
-def docs_iterator(vk, q, verbose=False):
+def docs_iterator(vk, q: str, verbose=False) -> Iterator:
 
     method = 'docs.search'
 
@@ -56,4 +59,4 @@ def docs_iterator(vk, q, verbose=False):
         'q': q
     }
 
-    return objects_iterator(vk, method, params, 1000, verbose)
+    return _base_iterator(vk, method, params, 1000, verbose)

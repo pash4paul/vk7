@@ -4,6 +4,7 @@
 import functools
 import logging
 import re
+from typing import Dict
 from urllib.parse import urlparse, parse_qsl
 
 import requests
@@ -134,3 +135,13 @@ def get_access_token(username, password, client_id, scope=None, version='5.69'):
     access_token = dict(parse_qsl(query))['access_token']
 
     return access_token
+
+
+def get_streaming_api_credentials(access_token: str) -> Dict:
+    from vk7 import VK
+
+    data = VK(access_token=access_token).streaming.getServerUrl()
+    return {
+        'endpoint': data['response']['endpoint'],
+        'key': data['response']['key']
+    }

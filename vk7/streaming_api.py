@@ -1,13 +1,12 @@
-#!/usr/bin/env python3
 # coding: utf8
-
 
 from typing import Dict, List
 
 import requests
 import websocket
 
-from vk7.utils import Lazy, get_streaming_api_credentials
+from vk7.common import get_streaming_api_credentials
+from vk7.utils import Lazy
 
 
 class StreamingApi(object):

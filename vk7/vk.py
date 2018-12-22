@@ -1,53 +1,43 @@
-# coding: utf8
+from vk7.utils import make_execute_method, make_execute_code, get_logger
+from vk7.vk_api import VkApi
 
-from functools import partial
-
-import requests
-
-from vk7.utils import Lazy
-from vk7.common import get_access_token
+logger = get_logger(__name__)
 
 
-class VK(object):
+class Vk(VkApi):
+    def __init__(self, *args, verbose: bool = False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._methods = {attr: getattr(self, attr) for attr in dir(self) if callable(getattr(self, attr))}
+        self._verbose = verbose
 
-    def __init__(self, username: str=None, password: str=None,
-                 client_id: int=None, scope: str=None, version: str='5.71',
-                 access_token: str=None):
+    def _items_iterator(self, method, **kwargs):
+        max_api_calls = 25
 
-        if username and password and client_id:
-            self._access_token = Lazy(
-                lambda: get_access_token(username, password, client_id,
-                                         scope, version))
-        else:
-            self._access_token = Lazy(lambda: access_token)
+        total = 100
+        offset = 0
+        count = 100
 
-        self._version = version
+        prev_offset = 0
 
-        self._call_stack = []
-        self._max_stack_size = 2
+        while offset < total:
+            methods = []
+            for _ in range(max_api_calls):
+                methods.append(make_execute_method(method, **kwargs, count=count, offset=offset))
+                offset += count
 
-    def __getattr__(self, method):
+            code = make_execute_code(methods)
 
-        self._call_stack.append(method)
+            if self._verbose:
+                logger.info('{} get items from {} to {}'.format(method, prev_offset, offset))
+                prev_offset = offset
 
-        if len(self._call_stack) == self._max_stack_size or method == 'execute':
-            method = '.'.join(self._call_stack)
-            self._call_stack = []
-            return partial(self._call, method)
-        else:
-            return self
+            for response in self.execute(code=code)['response']:
+                total = response['count']
+                for item in response['items']:
+                    yield item
 
-    def __call__(self, method, **params):
-        return getattr(self, method)(**params)
+    def groups_getMembers(self, group_id: int, fields: str):
+        return self._items_iterator('groups.getMembers', group_id=group_id, fields=fields)
 
-    def _call(self, method, **params):
-
-        api_url = 'https://api.vk.com/method/{}'.format(method)
-
-        params.update({
-            'access_token': self._access_token.value,
-            'v': self._version
-        })
-
-        data = requests.post(api_url, params).json()
-        return data
+    def wall_get(self, owner_id: int):
+        return self._items_iterator('wall.get', owner_id=owner_id)

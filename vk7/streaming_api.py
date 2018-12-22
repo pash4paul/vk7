@@ -1,27 +1,30 @@
 # coding: utf8
 
+from functools import lru_cache
 from typing import Dict, List
 
 import requests
 import websocket
 
-from vk7.common import get_streaming_api_credentials
-from vk7.utils import Lazy
+from vk7 import VkApi
 
 
-class StreamingApi(object):
-    def __init__(self, access_token: str):
-        self._credentials = Lazy(lambda: get_streaming_api_credentials(access_token))
+class StreamingApi(VkApi):
+    @lru_cache(maxsize=1)
+    def get_streaming_api_credentials(self):
+        data = self.streaming.getServerUrl()
+        return {
+            'endpoint': data['response']['endpoint'],
+            'key': data['response']['key']
+        }
 
-    @property
-    def rules_url(self) -> str:
-        if not hasattr(self, '_rules_url'):
-            credentials = self._credentials.value
-            self._rules_url = 'https://{}/rules?key={}'.format(
-                credentials['endpoint'],
-                credentials['key']
-            )
-        return self._rules_url
+    @lru_cache(maxsize=1)
+    def get_rules_url(self) -> str:
+        credentials = self.get_streaming_api_credentials()
+        return 'https://{}/rules?key={}'.format(
+            credentials['endpoint'],
+            credentials['key']
+        )
 
     def add_rule(self, value: str, tag: str) -> Dict:
         params = {
@@ -30,21 +33,20 @@ class StreamingApi(object):
                 'tag': tag
             }
         }
-
-        return requests.post(self.rules_url, json=params).json()
+        return requests.post(self.get_rules_url, json=params).json()
 
     def get_rules(self) -> List:
-        return requests.get(self.rules_url).json()['rules'] or []
+        return requests.get(self.get_rules_url).json()['rules'] or []
 
     def remove_rule(self, tag: str) -> Dict:
         params = {
             'tag': tag
         }
-        return requests.delete(self.rules_url, json=params).json()
+        return requests.delete(self.get_rules_url, json=params).json()
 
     def get_stream(self, on_open, on_close, on_message, on_error):
         websocket.enableTrace(False)
-        credentials = self._credentials.value
+        credentials = self.get_streaming_api_credentials()
 
         url = 'wss://{}/stream?key={}'.format(
             credentials['endpoint'], credentials['key'])

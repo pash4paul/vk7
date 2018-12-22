@@ -1,7 +1,7 @@
 # coding: utf8
 
 import re
-from functools import partial, lru_cache, wraps
+from functools import partial, lru_cache
 from urllib.parse import urlparse, parse_qsl
 
 import requests

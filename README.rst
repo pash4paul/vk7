@@ -20,19 +20,16 @@ Usage
 
 .. code:: python
 
-    >>> from vk7 import VK
-    >>> from vk7.data_iterators import group_members_iterator
-    >>>
-    >>> vk = VK()
-    >>> vk.users.get(user_ids='1,2')
-    {'response': [{'first_name': 'Павел', 'id': 1, 'last_name': 'Дуров'},
-      {'first_name': 'Александра',
-       'hidden': 1,
-       'id': 2,
-       'last_name': 'Владимирова'}]}
+    >>> from vk7 import Vk
     >>>
     >>> vk = VK('username', 'password', 'client_id')
-    >>> fields = ('bdate', 'connections', 'domain', 'followers_count', 'sex')
-    >>> group_members = group_members_iterator(vk, 'group_id', ','.join(fields), verbose=True)
+    >>> vk.users.get(user_ids='1,2')
+    {'response': [{'id': 1, 'first_name': 'Павел', 'last_name': 'Дуров'}, {'id': 2, 'first_name': 'Александра', 'last_name': 'Владимирова'}]}
+
+    >>>
+    >>> items = vk.groups.getMembers(group_id=1, fields='bdate,sex')
+    >>> item = next(items)
+    >>> item
+    {'id': 5, 'first_name': 'Илья', 'last_name': 'Перекопский', 'sex': 2, 'bdate': '18.11'}
 
 See https://vk.com/dev/methods for detailed API guide.
